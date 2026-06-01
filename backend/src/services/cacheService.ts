@@ -25,8 +25,16 @@ function markCached(key: string): void {
 function upsertDriver(driver: api.JolpicaDriver): void {
   const db = getDb();
   db.prepare(`
-    INSERT OR REPLACE INTO drivers (driver_id, code, permanent_number, forename, surname, date_of_birth, nationality, url)
+    INSERT INTO drivers (driver_id, code, permanent_number, forename, surname, date_of_birth, nationality, url)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(driver_id) DO UPDATE SET
+      code = excluded.code,
+      permanent_number = excluded.permanent_number,
+      forename = excluded.forename,
+      surname = excluded.surname,
+      date_of_birth = excluded.date_of_birth,
+      nationality = excluded.nationality,
+      url = excluded.url
   `).run(
     driver.driverId,
     driver.code ?? null,
@@ -42,16 +50,27 @@ function upsertDriver(driver: api.JolpicaDriver): void {
 function upsertConstructor(ctor: api.JolpicaConstructor): void {
   const db = getDb();
   db.prepare(`
-    INSERT OR REPLACE INTO constructors (constructor_id, name, nationality, url)
+    INSERT INTO constructors (constructor_id, name, nationality, url)
     VALUES (?, ?, ?, ?)
+    ON CONFLICT(constructor_id) DO UPDATE SET
+      name = excluded.name,
+      nationality = excluded.nationality,
+      url = excluded.url
   `).run(ctor.constructorId, ctor.name, ctor.nationality ?? null, ctor.url ?? null);
 }
 
 function upsertCircuit(circuit: api.JolpicaCircuit): void {
   const db = getDb();
   db.prepare(`
-    INSERT OR REPLACE INTO circuits (circuit_id, name, locality, country, lat, lng, url)
+    INSERT INTO circuits (circuit_id, name, locality, country, lat, lng, url)
     VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(circuit_id) DO UPDATE SET
+      name = excluded.name,
+      locality = excluded.locality,
+      country = excluded.country,
+      lat = excluded.lat,
+      lng = excluded.lng,
+      url = excluded.url
   `).run(
     circuit.circuitId,
     circuit.circuitName,
@@ -67,8 +86,13 @@ function upsertRace(race: api.JolpicaRace): number {
   const db = getDb();
   upsertCircuit(race.Circuit);
   db.prepare(`
-    INSERT OR REPLACE INTO races (season, round, race_name, circuit_id, date, time)
+    INSERT INTO races (season, round, race_name, circuit_id, date, time)
     VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(season, round) DO UPDATE SET
+      race_name = excluded.race_name,
+      circuit_id = excluded.circuit_id,
+      date = excluded.date,
+      time = excluded.time
   `).run(
     parseInt(race.season),
     parseInt(race.round),
